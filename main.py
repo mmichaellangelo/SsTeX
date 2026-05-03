@@ -14,6 +14,19 @@ from pystray import Icon, Menu, MenuItem
 # Prompt for converting an image to latex
 PromptImageToLatex = "You are a professional LaTeX OCR tool. Ignore any text that is not part of an equation."
 
+import os
+import sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 # Schema for latex response
 class MathResponse(BaseModel):
     is_math: bool
@@ -28,8 +41,11 @@ class ClipboardTypeError(Exception):
 IconType = Icon
 
 # Load images for tray icon
-icon_idle = Image.open('icon_idle.png')
-icon_loading = Image.open('icon_loading.png')
+icon_idle = Image.open(resource_path('assets/icon.ico'))
+icons_loading = [Image.open(resource_path('assets/load1.png')),
+                 Image.open(resource_path('assets/load2.png')),
+                 Image.open(resource_path('assets/load3.png')),
+                 Image.open(resource_path('assets/load4.png'))]
 
 # Get Gemini API key
 load_dotenv()
