@@ -2,11 +2,11 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 ; Non-commercial use only
 
-#define MyAppName "GemSS"
+#define MyAppName "SsTeX"
 #define MyAppVersion "0.1"
-#define MyAppPublisher "Kale Incorporated"
-#define MyAppURL "no"
-#define MyAppExeName "main.exe"
+#define MyAppPublisher "mmichaellangelo"
+#define MyAppURL "https://github.com/mmichaellangelo/sstex"
+#define MyAppExeName "sstex.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -34,9 +34,21 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=C:\Users\Michael\dev\gemss\setup
-OutputBaseFilename=GemSSSetup
+OutputBaseFilename=SsTeXSetup
 SolidCompression=yes
-WizardStyle=modern slate
+WizardStyle=modern
+
+[Tasks]
+Name: "startup"; Description: "Launch {#MyAppName} on Windows startup (recommended)"; GroupDescription: "Additional options:"; 
+
+[Registry]
+; This writes the registry key ONLY if the 'startup' task is selected
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
+    ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; \
+    Flags: uninsdeletevalue; Tasks: startup
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{userappdata}\SsTeX"
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -50,4 +62,3 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
