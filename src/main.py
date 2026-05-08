@@ -25,6 +25,7 @@ import pyperclip
 import time
 from pydantic import BaseModel
 from google import genai
+from google.genai.errors import ClientError
 from google.genai import types
 from PIL import Image, ImageGrab
 from pystray import Icon, Menu, MenuItem
@@ -100,10 +101,18 @@ def idle(icon: IconType, item: MenuItem):
 # Handles menu click for latex
 # Creates a new thread
 def action_latex(icon: IconType, item: MenuItem):
-    threading.Thread(target=clipboard_to_latex, args=(icon, item), daemon=True).start()        
+    threading.Thread(target=clipboard_to_latex, args=(icon, item), daemon=True).start()     
 
 # Grabs image data from clipboard
 def clipboard_to_latex(icon: IconType, item: MenuItem):
+    global client
+    if cfg.api_key == None:
+        icon.notify("No API key provided.")
+        return
+
+    if client == None:
+        client = genai.Client(api_key=cfg.api_key)
+
     # Grab image from Windows clipboard
     img = ImageGrab.grabclipboard()
 
@@ -122,29 +131,37 @@ def clipboard_to_latex(icon: IconType, item: MenuItem):
         img_bytes = img_byte_arr.getvalue()
 
         # Generate content using the proper 'types' structure
-        response = client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=[
-                types.Part.from_text(text=PromptImageToLatex),
-                types.Part.from_bytes(data=img_bytes, mime_type="image/png")
-            ],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=MathResponse
+        try:
+            response = client.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=[
+                    types.Part.from_text(text=PromptImageToLatex),
+                    types.Part.from_bytes(data=img_bytes, mime_type="image/png")
+                ],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=MathResponse
+                )
             )
-        )
-        # Stop loading animation
-        idle(icon, item)
-
-        # Get and check response
-        res: MathResponse = response.parsed
-        if res.is_math:
-            pyperclip.copy(res.latex_code.strip())
-            if cfg.notify_success:
-                icon.notify("Equation copied to clipboard")
-        else:
-            if cfg.notify_err:
-                icon.notify("No equation detected.")
+            idle(icon, item)
+            # Get and check response
+            res: MathResponse = response.parsed
+            if res.is_math:
+                pyperclip.copy(res.latex_code.strip())
+                if cfg.notify_success:
+                    icon.notify("Equation copied to clipboard")
+            else:
+                if cfg.notify_err:
+                    icon.notify("No equation detected.")
+        except ClientError as e:
+            print(e)
+            idle(icon, item)
+            icon.notify(e.message)
+        except Exception as e:
+            print(e)
+            idle(icon, item)
+            icon.notify(type(e).__name__)
+            
 
 def start_systray():
     """
@@ -153,7 +170,7 @@ def start_systray():
     """
     # Initialize pystray menu options
     menu = Menu(MenuItem('Clipboard to LaTeX', action=action_latex, visible=False, default=True),
-                MenuItem('Settings', action=lambda: threading.Thread(target=lambda: ui.show(), args=(cfg,), daemon=True).start()),
+                MenuItem('Settings', action=lambda: ui.root.event_generate("<<ToggleSettings>>", when="tail")),
                 MenuItem('Exit', action=exit, visible=True))
 
     # initialize pystray icon
@@ -168,7 +185,5 @@ if __name__ == '__main__':
     # Start systray in separate thread
     threading.Thread(target=start_systray, daemon=True).start()
 
-    # Start GUI and show it if there's no API key
-    ui.start_hidden()
-    if cfg.api_key == None:
-        ui.show()
+    # Start GUI hidden
+    ui.start(cfg)

@@ -17,12 +17,27 @@
 import tkinter as tk
 
 import config
+import ctypes
 import webbrowser
+from PIL import Image, ImageTk
+import util
 
 cfg: config.SsTeXConfig = None
 
+# Set app ID for custom taskbar icon
+myappid = 'mmichaellangelo.sstex.v1' 
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
 root = tk.Tk()
 root.withdraw()
+root.title('SsTeX Settings')
+root.config(padx=20, pady=20)
+root.resizable(False, False)
+root.attributes('-toolwindow', True) # Only show 'X'
+
+icon = Image.open(util.resource_path('assets/icon.ico'))
+icon = ImageTk.PhotoImage(icon)
+root.iconphoto(True, icon)
 
 # String variable for dynamic error/success messages
 msg = tk.StringVar(root, value='')
@@ -43,6 +58,7 @@ def update_api_key():
         return
     cfg.api_key = api_key
     cfg.save()
+    entry_apikey.delete(0, 'end')
     msg.set("API key updated.")
     
 
@@ -50,13 +66,21 @@ button_update_apikey = tk.Button(root, text="Update API key", command=update_api
 button_update_apikey.pack()
 tk.Label(root, textvariable=msg).pack()
 
-def start_hidden():
-    root.mainloop()
-
-def show(conf: config.SsTeXConfig):
+def start(conf: config.SsTeXConfig):
     global cfg
     cfg = conf
+    root.bind("<<ToggleSettings>>", func=show)
     root.mainloop()
+
+def show(event=None):
+    root.deiconify()
+    root.lift()
+    root.focus_force()
 
 def hide():
     root.withdraw()
+    msg.set('')
+    entry_apikey.delete(0, 'end')
+
+# Hide window when "X" is clicked
+root.protocol("WM_DELETE_WINDOW", hide)

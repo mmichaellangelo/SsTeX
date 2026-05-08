@@ -3,5 +3,5 @@
 # 
 # This script calls build_exec and build_installer scripts.
 
-.\build_exec.ps1
-.\build_installer.ps1
+.\scripts\build_exec.ps1
+.\scripts\build_installer.ps1

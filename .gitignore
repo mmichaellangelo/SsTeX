@@ -4,3 +4,4 @@ dist/
 .venv/
 *.exe
 *.spec
+src/__pycache__/

@@ -34,7 +34,7 @@ class SsTeXConfig(BaseModel):
     api_key: Optional[str] = None
     notify_err: bool = True
     notify_success: bool = True
-    # _lock: Lock = PrivateAttr(default_factory=Lock())
+    _lock: Lock = PrivateAttr(default_factory=lambda: Lock())
 
     @staticmethod
     def get_default_path():
@@ -66,6 +66,6 @@ class SsTeXConfig(BaseModel):
 
     def save(self):
         """ Saves current configuration to file. """
-        # with self._lock:
-        with open(self.config_filepath, 'w') as f:
-            json.dump(self.model_dump(mode='json'), f, indent=4)
+        with self._lock:
+            with open(self.config_filepath, 'w') as f:
+                json.dump(self.model_dump(mode='json'), f, indent=4)
